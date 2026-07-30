@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        # The oldest supported interpreter and the newest, because this runs on
+        # whatever the host or the image happens to provide.
+        python-version: ["3.13", "3.14"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: climate-resource/github-actions/setup-uv@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: uv sync --frozen
+      - name: Run tests
+        run: |
+          make test
+          uv run coverage xml
+      - uses: codecov/codecov-action@v5
+        if: matrix.python-version == '3.13'
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  ty:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: climate-resource/github-actions/setup-uv@v1
+        with:
+          python-version: "3.13"
+      - run: uv sync --frozen
+      - run: uv run ty check
+
+  licences:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: climate-resource/github-actions/setup-uv@v1
+        with:
+          python-version: "3.13"
+      - run: uv sync --frozen
+      - run: uv run pylic check
+
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - uses: climate-resource/github-actions/setup-uv@v1
+        with:
+          python-version: "3.13"
+      - run: uv sync --frozen
+      - run: uv run pre-commit run --all-files --show-diff-on-failure
+
+  changelog:
+    # A pull request that changes behaviour has to say so in a fragment, because
+    # "which version changed how a retain-until is computed" has to be
+    # answerable years later.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+        with:
+          fetch-depth: 0
+      - uses: climate-resource/github-actions/setup-uv@v1
+        with:
+          python-version: "3.13"
+      - run: uv sync --frozen
+      - name: Check that a changelog fragment was added
+        run: |
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD \
+             | grep -qE '^changelog/[0-9]+\.'; then
+            uv run towncrier build --draft --version 0.0.0
+          else
+            echo "::error::Add a changelog fragment: changelog/${{ github.event.number }}.<type>.md"
+            exit 1
+          fi
+
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6.0.2
+      - name: Build the image
+        run: docker build -t paperless-b2-archiver:ci .
+      - name: The image can at least start and describe itself
+        run: docker run --rm paperless-b2-archiver:ci --help

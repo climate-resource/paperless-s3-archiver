@@ -1,0 +1,89 @@
+[project]
+name = "paperless-b2-archiver"
+version = "0.1.0"
+description = "Write paperless-ngx documents to a WORM object store under Object Lock, with statutory retention periods computed per document"
+readme = "README.md"
+requires-python = ">=3.13"
+license = "Apache-2.0"
+license-files = ["LICENCE"]
+authors = [
+    { name = "Mika Pflüger", email = "mika.pflueger@climate-resource.com" },
+]
+keywords = ["paperless-ngx", "archiving", "retention", "object-lock", "worm", "gobd"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: System Administrators",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: System :: Archiving",
+]
+dependencies = [
+    "boto3>=1.35",
+    "pydantic>=2.9",
+    "requests>=2.32",
+]
+
+[project.urls]
+Homepage = "https://github.com/climate-resource/paperless-b2-archiver"
+Repository = "https://github.com/climate-resource/paperless-b2-archiver"
+Changelog = "https://github.com/climate-resource/paperless-b2-archiver/blob/main/CHANGELOG.md"
+
+[project.scripts]
+# The command keeps the name the runbooks and systemd units already use.
+paperless-archive = "paperless_b2_archiver.cli:entry_point"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+required-version = ">=0.9"
+
+[dependency-groups]
+dev = [
+    "boto3-stubs[s3]>=1.35",
+    "moto[s3]>=5.1",
+    "pre-commit>=4.2",
+    "pylic>=5.0",
+    "pytest>=8.3",
+    "pytest-cov>=6.1",
+    "responses>=0.25",
+    "ruff>=0.13",
+    "towncrier>=24.8",
+    "ty>=0.0.1a14",
+    "types-requests>=2.32",
+]
+
+[tool.pytest.ini_options]
+addopts = ["--import-mode=importlib"]
+testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["src"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 85
+skip_empty = true
+show_missing = true
+exclude_also = ["if TYPE_CHECKING"]
+
+[tool.ty.src]
+include = ["src"]
+
+[tool.pylic]
+# Permissive licences only. Anything copyleft would have to be a deliberate
+# decision, not something that arrives with a transitive dependency bump.
+safe_licenses = [
+    "Apache Software License",
+    "Apache-2.0",
+    "BSD License",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "ISC License (ISCL)",
+    "MIT",
+    "MIT License",
+    "MIT-0",
+    "Mozilla Public License 2.0 (MPL 2.0)",
+    "PSF-2.0",
+    "Python Software Foundation License",
+]

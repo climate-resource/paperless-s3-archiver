@@ -1,0 +1,51 @@
+# See https://pre-commit.com for more information
+ci:
+  autofix_prs: false
+  autoupdate_schedule: quarterly
+  autoupdate_branch: pre-commit-autoupdate
+  skip: [pylic, ty]
+
+exclude: "tests/data/.*"
+
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: "v6.0.0"
+    hooks:
+      - id: check-added-large-files
+      - id: check-ast
+      - id: check-case-conflict
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-symlinks
+      - id: check-yaml
+      - id: debug-statements
+      - id: detect-private-key
+      - id: end-of-file-fixer
+      - id: fix-byte-order-marker
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: "v0.15.16"
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+      - id: ruff-format
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.11.19
+    hooks:
+      - id: uv-lock
+  - repo: local
+    hooks:
+      - id: ty
+        name: ty static type check
+        entry: uv run ty check
+        language: system
+        types: [python]
+        pass_filenames: false
+      - id: pylic
+        name: pylic dependency licence check
+        entry: uv run pylic check
+        language: system
+        files: ^(pyproject\.toml|uv\.lock)$
+        pass_filenames: false

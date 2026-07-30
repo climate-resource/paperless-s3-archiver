@@ -1,0 +1,42 @@
+src = ["src"]
+target-version = "py313"
+line-length = 110
+
+[format]
+docstring-code-format = true
+
+[lint]
+select = [
+    "E",    # pycodestyle error
+    "W",    # pycodestyle warning
+    "F",    # pyflakes
+    "I",    # isort
+    "D",    # pydocstyle
+    "PL",   # pylint
+    "TRY",  # tryceratops
+    "RUF",  # ruff specifics
+    "UP",   # pyupgrade
+    "S",    # flake8-bandit
+]
+ignore = [
+    "D200",   # One-line docstring should fit on one line with quotes
+    "D400",   # First line should end with a period
+    "TRY003", # Avoid specifying long messages outside the exception class
+    "TRY300", # Consider moving this statement to an `else` block
+    # A numpydoc summary line for an accessor reads better as the noun phrase it
+    # returns ("The classes an auditor may see") than as a command.
+    "D401",
+    # Every `except` in this package catches a named, anticipated failure and
+    # reports it as a decision the job made. `logging.exception` would attach a
+    # traceback that suggests a bug, and bury the one line an operator needs.
+    "TRY400",
+]
+isort.known-first-party = ["paperless_b2_archiver"]
+pydocstyle.convention = "numpy"
+
+[lint.per-file-ignores]
+"tests/*" = [
+    "D",       # Documentation not needed in tests
+    "PLR2004", # Magic value used in comparison
+    "S101",    # Use of `assert` detected
+]
