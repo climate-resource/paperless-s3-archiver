@@ -26,9 +26,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 FROM python:3.13-slim-trixie AS runtime
 
-LABEL org.opencontainers.image.title="paperless-b2-archiver"
+LABEL org.opencontainers.image.title="paperless-s3-archiver"
 LABEL org.opencontainers.image.description="Write paperless-ngx documents to a WORM object store under Object Lock"
-LABEL org.opencontainers.image.source="https://github.com/climate-resource/paperless-b2-archiver"
+LABEL org.opencontainers.image.source="https://github.com/climate-resource/paperless-s3-archiver"
 LABEL org.opencontainers.image.licenses="Apache-2.0"
 
 ENV PATH="/app/.venv/bin:${PATH}"

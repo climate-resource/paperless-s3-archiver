@@ -7,7 +7,7 @@ import boto3
 import pytest
 from moto import mock_aws
 
-from paperless_b2_archiver.config import Config
+from paperless_s3_archiver.config import Config
 
 #: A table with one class per clock, so every branch of the retention
 #: arithmetic has a fixture to exercise it. Deliberately not a copy of any real
@@ -72,8 +72,9 @@ def config_dict(tmp_path: Path, **overrides: Any) -> dict[str, Any]:
         "api_base": "http://paperless.invalid/api",
         "bucket": "example-archive-crs",
         # moto only intercepts endpoints it recognises as S3, so the tests use
-        # an AWS-shaped one. Production points at B2; nothing in this package is
-        # B2-specific beyond the value of this field.
+        # an AWS-shaped one. That the whole Object Lock suite passes against an
+        # AWS emulation, while production runs on Backblaze B2, is the evidence
+        # that this package is tied to neither.
         "endpoint": "https://s3.us-east-1.amazonaws.com",
         "region": "us-east-1",
         "object_lock_mode": "COMPLIANCE",
@@ -110,7 +111,7 @@ def config_file(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def b2_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
+def store_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
     """Both roles' credentials, as the units would supply them."""
     for role in ("WRITER", "READER"):
         monkeypatch.setenv(f"PAPERLESS_ARCHIVE_{role}_KEY_ID", f"test-{role.lower()}-id")
@@ -119,7 +120,7 @@ def b2_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture
-def locked_bucket(cfg: Config, b2_credentials: None):
+def locked_bucket(cfg: Config, store_credentials: None):
     """A moto S3 bucket with Object Lock enabled, as Terraform creates it."""
     with mock_aws():
         client = boto3.client("s3", region_name="us-east-1")

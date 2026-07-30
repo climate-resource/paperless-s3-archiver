@@ -10,11 +10,11 @@ from typing import Any
 import pytest
 import responses
 
-from paperless_b2_archiver.b2 import put_locked
-from paperless_b2_archiver.commands.inventory import cmd_inventory
-from paperless_b2_archiver.commands.reconcile import cmd_reconcile
-from paperless_b2_archiver.config import Config
-from paperless_b2_archiver.retention import year_end
+from paperless_s3_archiver.commands.inventory import cmd_inventory
+from paperless_s3_archiver.commands.reconcile import cmd_reconcile
+from paperless_s3_archiver.config import Config
+from paperless_s3_archiver.retention import year_end
+from paperless_s3_archiver.s3 import put_locked
 
 TAGS = [
     {"id": 1, "name": "class:receipts"},

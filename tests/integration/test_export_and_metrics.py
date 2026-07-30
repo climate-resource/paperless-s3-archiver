@@ -10,14 +10,14 @@ from typing import Any
 import pytest
 import responses
 
-from paperless_b2_archiver.commands.export import (
+from paperless_s3_archiver.commands.export import (
     NoExportAvailable,
     cmd_auditor_export,
     cmd_export,
     cmd_fetch_export,
 )
-from paperless_b2_archiver.commands.metrics import cmd_metrics
-from paperless_b2_archiver.config import Config
+from paperless_s3_archiver.commands.metrics import cmd_metrics
+from paperless_s3_archiver.config import Config
 
 
 class FakeRuntime:
@@ -68,7 +68,7 @@ def _write_export(root: Path) -> None:
 @pytest.fixture
 def fake_runtime(cfg: Config, monkeypatch: pytest.MonkeyPatch) -> FakeRuntime:
     runtime = FakeRuntime(cfg)
-    monkeypatch.setattr("paperless_b2_archiver.commands.export.get_runtime", lambda **_kwargs: runtime)
+    monkeypatch.setattr("paperless_s3_archiver.commands.export.get_runtime", lambda **_kwargs: runtime)
     return runtime
 
 
@@ -109,7 +109,7 @@ class TestExport:
 
     def test_reports_a_failed_exporter_without_uploading(self, cfg: Config, locked_bucket, monkeypatch):
         runtime = FakeRuntime(cfg, fail=True)
-        monkeypatch.setattr("paperless_b2_archiver.commands.export.get_runtime", lambda **_kwargs: runtime)
+        monkeypatch.setattr("paperless_s3_archiver.commands.export.get_runtime", lambda **_kwargs: runtime)
         assert cmd_export(cfg, Namespace()) == 1
         assert locked_bucket.list_objects_v2(Bucket=cfg.bucket).get("Contents", []) == []
 
@@ -204,7 +204,7 @@ class TestMetrics:
     ):
         open_cfg = cfg.model_copy(update={"public_enabled": True, "public_until": "2099-01-01"})
         monkeypatch.setattr(
-            "paperless_b2_archiver.commands.metrics.get_runtime",
+            "paperless_s3_archiver.commands.metrics.get_runtime",
             lambda **_kwargs: FakeRuntime(open_cfg, tunnel_up=True),
         )
         self._users(paperless_api, open_cfg, [])
@@ -224,7 +224,7 @@ class TestMetrics:
         # the alert rule keys off.
         stale = cfg.model_copy(update={"public_enabled": True, "public_until": "2020-01-01"})
         monkeypatch.setattr(
-            "paperless_b2_archiver.commands.metrics.get_runtime",
+            "paperless_s3_archiver.commands.metrics.get_runtime",
             lambda **_kwargs: FakeRuntime(stale, tunnel_up=True),
         )
         self._users(paperless_api, stale, [])

@@ -4,9 +4,9 @@ The metrics file and the journal, which is what an alert rule reads
 
 import json
 
-from paperless_b2_archiver.config import Config
-from paperless_b2_archiver.observability import Metric, journal, write_metrics
-from paperless_b2_archiver.state import State
+from paperless_s3_archiver.config import Config
+from paperless_s3_archiver.observability import Metric, journal, write_metrics
+from paperless_s3_archiver.state import State
 
 
 def _read(cfg: Config, job: str) -> str:

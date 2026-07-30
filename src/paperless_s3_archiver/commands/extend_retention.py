@@ -10,11 +10,11 @@ from typing import Any
 
 from botocore.exceptions import ClientError
 
-from paperless_b2_archiver.b2 import list_bucket, put_locked, s3_client
-from paperless_b2_archiver.config import Config
-from paperless_b2_archiver.observability import Metric, journal, write_metrics
-from paperless_b2_archiver.retention import Undecidable, recompute_retention, tag_suffix, year_end
-from paperless_b2_archiver.state import State
+from paperless_s3_archiver.config import Config
+from paperless_s3_archiver.observability import Metric, journal, write_metrics
+from paperless_s3_archiver.retention import Undecidable, recompute_retention, tag_suffix, year_end
+from paperless_s3_archiver.s3 import list_bucket, put_locked, s3_client
+from paperless_s3_archiver.state import State
 
 LOG = logging.getLogger("paperless-archive")
 
@@ -113,7 +113,7 @@ def _plan(
             have = head.get("ObjectLockRetainUntilDate")
             if have is not None and have >= want:
                 # Already held at least this long. Never attempt the other
-                # direction: B2 would refuse it under COMPLIANCE, and asking
+                # direction: the store refuses it under COMPLIANCE, and asking
                 # is not something this program should ever do.
                 continue
             plan.append(

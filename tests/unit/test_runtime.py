@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from paperless_b2_archiver.runtime import DockerRuntime, Runtime, get_runtime
+from paperless_s3_archiver.runtime import DockerRuntime, Runtime, get_runtime
 
 
 class FakeRuntime:
@@ -51,9 +51,9 @@ class TestGetRuntime:
 class TestDockerRuntime:
     def test_runs_the_exporter_in_the_webserver_container(self, monkeypatch: pytest.MonkeyPatch):
         calls = []
-        monkeypatch.setattr("paperless_b2_archiver.runtime.shutil.which", lambda _: "/usr/bin/docker")
+        monkeypatch.setattr("paperless_s3_archiver.runtime.shutil.which", lambda _: "/usr/bin/docker")
         monkeypatch.setattr(
-            "paperless_b2_archiver.runtime.subprocess.run",
+            "paperless_s3_archiver.runtime.subprocess.run",
             lambda cmd, **kw: calls.append(cmd) or subprocess.CompletedProcess(cmd, 0),
         )
 
@@ -71,17 +71,17 @@ class TestDockerRuntime:
         assert {"--split-manifest", "--delete", "--no-thumbnail"} <= set(cmd)
 
     def test_reports_the_tunnel_as_up(self, monkeypatch: pytest.MonkeyPatch):
-        monkeypatch.setattr("paperless_b2_archiver.runtime.shutil.which", lambda _: "/usr/bin/docker")
+        monkeypatch.setattr("paperless_s3_archiver.runtime.shutil.which", lambda _: "/usr/bin/docker")
         monkeypatch.setattr(
-            "paperless_b2_archiver.runtime.subprocess.run",
+            "paperless_s3_archiver.runtime.subprocess.run",
             lambda cmd, **kw: subprocess.CompletedProcess(cmd, 0, stdout="true\n"),
         )
         assert DockerRuntime(entity="crs", compose_dir=Path("/opt")).tunnel_running() is True
 
     def test_reports_the_tunnel_as_down(self, monkeypatch: pytest.MonkeyPatch):
-        monkeypatch.setattr("paperless_b2_archiver.runtime.shutil.which", lambda _: "/usr/bin/docker")
+        monkeypatch.setattr("paperless_s3_archiver.runtime.shutil.which", lambda _: "/usr/bin/docker")
         monkeypatch.setattr(
-            "paperless_b2_archiver.runtime.subprocess.run",
+            "paperless_s3_archiver.runtime.subprocess.run",
             lambda cmd, **kw: subprocess.CompletedProcess(cmd, 1, stdout=""),
         )
         assert DockerRuntime(entity="crs", compose_dir=Path("/opt")).tunnel_running() is False
@@ -90,24 +90,24 @@ class TestDockerRuntime:
         # Reporting another entity's tunnel as this one's exposure would put the
         # wrong entity on the dashboard during an audit.
         calls = []
-        monkeypatch.setattr("paperless_b2_archiver.runtime.shutil.which", lambda _: "/usr/bin/docker")
+        monkeypatch.setattr("paperless_s3_archiver.runtime.shutil.which", lambda _: "/usr/bin/docker")
         monkeypatch.setattr(
-            "paperless_b2_archiver.runtime.subprocess.run",
+            "paperless_s3_archiver.runtime.subprocess.run",
             lambda cmd, **kw: calls.append(cmd) or subprocess.CompletedProcess(cmd, 0, stdout="true"),
         )
         DockerRuntime(entity="cr", compose_dir=Path("/opt")).tunnel_running()
         assert "paperless-cr-cloudflared" in calls[0]
 
     def test_a_failure_to_ask_reports_not_exposed(self, monkeypatch: pytest.MonkeyPatch):
-        monkeypatch.setattr("paperless_b2_archiver.runtime.shutil.which", lambda _: "/usr/bin/docker")
+        monkeypatch.setattr("paperless_s3_archiver.runtime.shutil.which", lambda _: "/usr/bin/docker")
 
         def boom(*_args, **_kwargs):
             raise OSError("no docker socket")
 
-        monkeypatch.setattr("paperless_b2_archiver.runtime.subprocess.run", boom)
+        monkeypatch.setattr("paperless_s3_archiver.runtime.subprocess.run", boom)
         assert DockerRuntime(entity="crs", compose_dir=Path("/opt")).tunnel_running() is False
 
     def test_refuses_when_docker_is_not_installed(self, monkeypatch: pytest.MonkeyPatch):
-        monkeypatch.setattr("paperless_b2_archiver.runtime.shutil.which", lambda _: None)
+        monkeypatch.setattr("paperless_s3_archiver.runtime.shutil.which", lambda _: None)
         with pytest.raises(FileNotFoundError, match="not on PATH"):
             DockerRuntime(entity="crs", compose_dir=Path("/opt")).run_document_exporter("/dest")

@@ -18,13 +18,13 @@ from pathlib import Path
 
 from botocore.exceptions import ClientError
 
-from paperless_b2_archiver.b2 import list_bucket, s3_client, sync_tree
-from paperless_b2_archiver.config import Config
-from paperless_b2_archiver.exporting import ExportFilterLeak, filter_export
-from paperless_b2_archiver.observability import Metric, journal, write_metrics
-from paperless_b2_archiver.retention import year_end
-from paperless_b2_archiver.runtime import get_runtime
-from paperless_b2_archiver.state import State
+from paperless_s3_archiver.config import Config
+from paperless_s3_archiver.exporting import ExportFilterLeak, filter_export
+from paperless_s3_archiver.observability import Metric, journal, write_metrics
+from paperless_s3_archiver.retention import year_end
+from paperless_s3_archiver.runtime import get_runtime
+from paperless_s3_archiver.s3 import list_bucket, s3_client, sync_tree
+from paperless_s3_archiver.state import State
 
 LOG = logging.getLogger("paperless-archive")
 

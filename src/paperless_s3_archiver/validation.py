@@ -3,7 +3,7 @@ Checks on a configuration that would be wrong in a way we cannot undo
 
 Loading a config already refuses the structural mistakes -- a missing class
 table, an archived class with no period, an open audit window with no expiry --
-because :mod:`paperless_b2_archiver.config` will not build a `Config` without
+because :mod:`paperless_s3_archiver.config` will not build a `Config` without
 them. What is left here needs either the current date or a second entity's
 config to decide, so it cannot be a field validator.
 
@@ -17,7 +17,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Literal
 
-from paperless_b2_archiver.config import Config
+from paperless_s3_archiver.config import Config
 
 #: How far out an audit-mode window may be opened. An engagement that genuinely
 #: needs longer is a deliberate reopening with a new date, not one long window.

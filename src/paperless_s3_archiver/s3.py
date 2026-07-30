@@ -1,12 +1,21 @@
 """
 The archive of record: an S3-compatible bucket with Object Lock
 
-Backblaze B2 in production, but nothing here is B2-specific beyond the endpoint
-in the config. Object Lock is an S3 API, and keeping to it means the archive can
-be read back with any S3 client by somebody who has never heard of this program.
+No provider is named anywhere in this module. Six calls are made -- `put_object`,
+`head_object`, `get_object`, `put_object_retention`, `list_objects_v2` and a
+managed download -- and all six are the S3 API rather than any vendor's own.
+Integrity comes from a SHA-256 this program computes and stores, never from
+`ETag`, so nothing depends on how a particular implementation derives one.
+
+Keeping to that is not tidiness. The retain-until dates written here run for a
+decade, which is longer than any assumption about who is storing the bytes, so
+the archive has to be readable with an ordinary S3 client by somebody who has
+never heard of this program.
 """
 
+import base64
 import datetime as dt
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -15,11 +24,33 @@ from typing import Any
 import boto3
 from botocore.config import Config as BotoConfig
 
-from paperless_b2_archiver.config import Config
+from paperless_s3_archiver.config import Config
 
 
 class MissingCredentials(Exception):
     """No credentials in the environment for the role a job asked for."""
+
+
+def content_md5(body: bytes) -> str:
+    """
+    The base64 MD5 of a payload, for the S3 `Content-MD5` header
+
+    Parameters
+    ----------
+    body
+        The bytes about to be uploaded.
+
+    Returns
+    -------
+    :
+        The digest, base64-encoded as the header wants it.
+    """
+    # Not a security property, and not this archive's integrity claim. S3
+    # requires an integrity header on a locked PUT and this is the form every
+    # implementation accepts; the claim that matters is the SHA-256 stored
+    # alongside the object.
+    digest = hashlib.md5(body, usedforsecurity=False).digest()
+    return base64.b64encode(digest).decode("ascii")
 
 
 def s3_client(cfg: Config, *, role: str) -> Any:
@@ -55,14 +86,31 @@ def s3_client(cfg: Config, *, role: str) -> Any:
     key_id = os.environ.get(f"PAPERLESS_ARCHIVE_{role.upper()}_KEY_ID", "")
     key = os.environ.get(f"PAPERLESS_ARCHIVE_{role.upper()}_KEY", "")
     if not key_id or not key:
-        raise MissingCredentials(f"No B2 {role} credentials in the environment for {cfg.entity}")
+        raise MissingCredentials(f"No {role} credentials in the environment for {cfg.entity}")
     return boto3.client(
         "s3",
         endpoint_url=cfg.endpoint,
         region_name=cfg.region,
         aws_access_key_id=key_id,
         aws_secret_access_key=key,
-        config=BotoConfig(retries={"max_attempts": 5, "mode": "standard"}),
+        config=BotoConfig(
+            retries={"max_attempts": 5, "mode": "standard"},
+            # Plain PUTs, with no AWS-chunked framing and no trailing CRC32.
+            #
+            # botocore >= 1.36 defaults these to "when_supported", which adds
+            # `Content-Encoding: aws-chunked` and `x-amz-sdk-checksum-algorithm`
+            # to every upload. That is an AWS wire format, not an S3 API, and
+            # implementations vary in whether they accept it -- and in whether
+            # they store the encoding header as object metadata, which would
+            # follow the object for as long as it is locked.
+            #
+            # Nothing is lost by turning it off. Every object's integrity is
+            # established by the SHA-256 this program computes, records in the
+            # object's metadata, and repeats in the sidecar, which is verifiable
+            # by anyone with the bytes and no knowledge of this program at all.
+            request_checksum_calculation="when_required",
+            response_checksum_validation="when_required",
+        ),
     )
 
 
@@ -113,6 +161,18 @@ def put_locked(  # noqa: PLR0913 -- every one of these decides what gets written
         "Key": key,
         "Body": body,
         "ContentType": content_type,
+        # S3 refuses a PUT that carries Object Lock retention unless it also
+        # carries an integrity header, which is the right rule for an object
+        # that cannot be corrected once written.
+        #
+        # Content-MD5 rather than the SDK's newer checksum trailer: it is part
+        # of the original S3 API, every implementation accepts it, and it does
+        # not pull in the AWS-chunked framing that `request_checksum_calculation`
+        # is turned down to avoid. It is a transport check and nothing more --
+        # this archive's integrity claim is the SHA-256 in the object's metadata
+        # and its sidecar, so do not "upgrade" this expecting it to be load
+        # bearing.
+        "ContentMD5": content_md5(body),
     }
     if metadata:
         kwargs["Metadata"] = metadata

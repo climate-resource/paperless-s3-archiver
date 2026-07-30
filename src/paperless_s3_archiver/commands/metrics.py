@@ -8,10 +8,10 @@ import logging
 
 import requests
 
-from paperless_b2_archiver.config import Config
-from paperless_b2_archiver.observability import Metric, write_metrics
-from paperless_b2_archiver.paperless import MissingToken, PaperlessAPI
-from paperless_b2_archiver.runtime import get_runtime
+from paperless_s3_archiver.config import Config
+from paperless_s3_archiver.observability import Metric, write_metrics
+from paperless_s3_archiver.paperless import MissingToken, PaperlessAPI
+from paperless_s3_archiver.runtime import get_runtime
 
 LOG = logging.getLogger("paperless-archive")
 

@@ -6,8 +6,8 @@ import datetime as dt
 
 import pytest
 
-from paperless_b2_archiver.config import Config
-from paperless_b2_archiver.retention import (
+from paperless_s3_archiver.config import Config
+from paperless_s3_archiver.retention import (
     AMBIGUOUS,
     UNCLASSIFIED,
     Undecidable,

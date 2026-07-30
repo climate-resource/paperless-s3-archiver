@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from paperless_b2_archiver.b2 import MissingCredentials
-from paperless_b2_archiver.cli import COMMANDS, build_parser, entry_point, main
+from paperless_s3_archiver.cli import COMMANDS, build_parser, entry_point, main
+from paperless_s3_archiver.s3 import MissingCredentials
 
 from ..conftest import config_dict
 
@@ -58,7 +58,7 @@ class TestConfigResolution:
     def test_the_runtime_flag_overrides_the_config(self, config_file: Path, monkeypatch: pytest.MonkeyPatch):
         seen = {}
         monkeypatch.setattr(
-            "paperless_b2_archiver.cli.COMMANDS",
+            "paperless_s3_archiver.cli.COMMANDS",
             {**COMMANDS, "validate": lambda cfg, _args: seen.update(runtime=cfg.runtime) or 0},
         )
         main(["--config", str(config_file), "--runtime", "docker", "validate"])
@@ -115,21 +115,21 @@ class TestEntryPoint:
         # A refusal is this program declining to do something permanent on
         # incomplete information. A traceback would suggest a bug instead.
         def refuse(_cfg, _args):
-            raise MissingCredentials("No B2 writer credentials in the environment for crs")
+            raise MissingCredentials("No writer credentials in the environment for crs")
 
         monkeypatch.setenv("PAPERLESS_ARCHIVE_CONFIG", str(config_file))
-        monkeypatch.setattr("paperless_b2_archiver.cli.COMMANDS", {**COMMANDS, "tap": refuse})
+        monkeypatch.setattr("paperless_s3_archiver.cli.COMMANDS", {**COMMANDS, "tap": refuse})
         monkeypatch.setattr("sys.argv", ["paperless-archive", "tap"])
 
         with pytest.raises(SystemExit) as exit_info:
             entry_point()
 
         assert exit_info.value.code == 2
-        assert "refused: No B2 writer credentials" in capsys.readouterr().err
+        assert "refused: No writer credentials" in capsys.readouterr().err
 
     def test_passes_a_commands_exit_status_through(self, config_file: Path, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setenv("PAPERLESS_ARCHIVE_CONFIG", str(config_file))
-        monkeypatch.setattr("paperless_b2_archiver.cli.COMMANDS", {**COMMANDS, "tap": lambda _cfg, _args: 1})
+        monkeypatch.setattr("paperless_s3_archiver.cli.COMMANDS", {**COMMANDS, "tap": lambda _cfg, _args: 1})
         monkeypatch.setattr("sys.argv", ["paperless-archive", "tap"])
 
         with pytest.raises(SystemExit) as exit_info:

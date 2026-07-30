@@ -14,23 +14,23 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from paperless_b2_archiver.b2 import MissingCredentials
-from paperless_b2_archiver.commands.export import (
+from paperless_s3_archiver.commands.export import (
     NoExportAvailable,
     cmd_auditor_export,
     cmd_export,
     cmd_fetch_export,
 )
-from paperless_b2_archiver.commands.extend_retention import RefusedExtension, cmd_extend_retention
-from paperless_b2_archiver.commands.inventory import cmd_inventory
-from paperless_b2_archiver.commands.metrics import cmd_metrics
-from paperless_b2_archiver.commands.reconcile import cmd_reconcile
-from paperless_b2_archiver.commands.tap import cmd_tap
-from paperless_b2_archiver.commands.validate import cmd_validate
-from paperless_b2_archiver.config import Config, load_config
-from paperless_b2_archiver.exporting import ExportFilterLeak
-from paperless_b2_archiver.paperless import MissingToken
-from paperless_b2_archiver.validation import DEFAULT_PUBLIC_MAX_DAYS
+from paperless_s3_archiver.commands.extend_retention import RefusedExtension, cmd_extend_retention
+from paperless_s3_archiver.commands.inventory import cmd_inventory
+from paperless_s3_archiver.commands.metrics import cmd_metrics
+from paperless_s3_archiver.commands.reconcile import cmd_reconcile
+from paperless_s3_archiver.commands.tap import cmd_tap
+from paperless_s3_archiver.commands.validate import cmd_validate
+from paperless_s3_archiver.config import Config, load_config
+from paperless_s3_archiver.exporting import ExportFilterLeak
+from paperless_s3_archiver.paperless import MissingToken
+from paperless_s3_archiver.s3 import MissingCredentials
+from paperless_s3_archiver.validation import DEFAULT_PUBLIC_MAX_DAYS
 
 Command = Callable[[Config, argparse.Namespace], int]
 

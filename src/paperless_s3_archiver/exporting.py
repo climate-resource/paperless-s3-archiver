@@ -12,8 +12,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-from paperless_b2_archiver.config import Config
-from paperless_b2_archiver.retention import resolve_class
+from paperless_s3_archiver.config import Config
+from paperless_s3_archiver.retention import resolve_class
 
 
 class ExportFilterLeak(Exception):

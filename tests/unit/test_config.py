@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from paperless_b2_archiver.config import Config, load_config
+from paperless_s3_archiver.config import Config, load_config
 
 from ..conftest import config_dict
 

@@ -56,4 +56,4 @@ virtual-environment:  ## update the virtual environment, creating it if needed
 
 .PHONY: docker
 docker:  ## build the container image locally
-	docker build -t paperless-b2-archiver .
+	docker build -t paperless-s3-archiver .

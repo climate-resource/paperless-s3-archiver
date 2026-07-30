@@ -1,5 +1,5 @@
 [project]
-name = "paperless-b2-archiver"
+name = "paperless-s3-archiver"
 version = "0.1.0"
 description = "Write paperless-ngx documents to a WORM object store under Object Lock, with statutory retention periods computed per document"
 readme = "README.md"
@@ -23,13 +23,13 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/climate-resource/paperless-b2-archiver"
-Repository = "https://github.com/climate-resource/paperless-b2-archiver"
-Changelog = "https://github.com/climate-resource/paperless-b2-archiver/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/climate-resource/paperless-s3-archiver"
+Repository = "https://github.com/climate-resource/paperless-s3-archiver"
+Changelog = "https://github.com/climate-resource/paperless-s3-archiver/blob/main/CHANGELOG.md"
 
 [project.scripts]
 # The command keeps the name the runbooks and systemd units already use.
-paperless-archive = "paperless_b2_archiver.cli:entry_point"
+paperless-archive = "paperless_s3_archiver.cli:entry_point"
 
 [build-system]
 requires = ["hatchling"]

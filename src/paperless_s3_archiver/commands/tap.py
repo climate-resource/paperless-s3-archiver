@@ -13,13 +13,13 @@ import logging
 import requests
 from botocore.exceptions import ClientError
 
-from paperless_b2_archiver.archiving import TapContext, archive_document
-from paperless_b2_archiver.b2 import s3_client
-from paperless_b2_archiver.config import Config
-from paperless_b2_archiver.observability import Metric, journal, write_metrics
-from paperless_b2_archiver.paperless import PaperlessAPI
-from paperless_b2_archiver.retention import Undecidable
-from paperless_b2_archiver.state import State
+from paperless_s3_archiver.archiving import TapContext, archive_document
+from paperless_s3_archiver.config import Config
+from paperless_s3_archiver.observability import Metric, journal, write_metrics
+from paperless_s3_archiver.paperless import PaperlessAPI
+from paperless_s3_archiver.retention import Undecidable
+from paperless_s3_archiver.s3 import s3_client
+from paperless_s3_archiver.state import State
 
 LOG = logging.getLogger("paperless-archive")
 

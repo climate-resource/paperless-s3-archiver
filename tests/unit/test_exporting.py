@@ -12,9 +12,9 @@ from typing import Any
 
 import pytest
 
-from paperless_b2_archiver import exporting
-from paperless_b2_archiver.config import Config
-from paperless_b2_archiver.exporting import ExportFilterLeak, filter_export
+from paperless_s3_archiver import exporting
+from paperless_s3_archiver.config import Config
+from paperless_s3_archiver.exporting import ExportFilterLeak, filter_export
 
 DOCUMENT_CONTENT_TYPE = 7
 

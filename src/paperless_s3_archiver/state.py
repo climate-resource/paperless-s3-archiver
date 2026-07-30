@@ -5,7 +5,7 @@ Counters that have to survive a restart, because alerts fire on increases
 import json
 from typing import Any
 
-from paperless_b2_archiver.config import Config
+from paperless_s3_archiver.config import Config
 
 
 class State:

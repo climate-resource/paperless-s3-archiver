@@ -554,7 +554,7 @@ wheels = [
 ]
 
 [[package]]
-name = "paperless-b2-archiver"
+name = "paperless-s3-archiver"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

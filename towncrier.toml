@@ -1,11 +1,11 @@
 [tool.towncrier]
-package = "paperless_b2_archiver"
+package = "paperless_s3_archiver"
 package_dir = "src"
 filename = "CHANGELOG.md"
 directory = "changelog/"
-title_format = "## paperless-b2-archiver {version} ({project_date})"
+title_format = "## paperless-s3-archiver {version} ({project_date})"
 underlines = ["", "", ""]
-issue_format = "[#{issue}](https://github.com/climate-resource/paperless-b2-archiver/pull/{issue})"
+issue_format = "[#{issue}](https://github.com/climate-resource/paperless-s3-archiver/pull/{issue})"
 
   [[tool.towncrier.type]]
   directory = "breaking"

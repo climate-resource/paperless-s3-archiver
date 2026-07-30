@@ -11,12 +11,12 @@ from typing import Any
 import requests
 from botocore.exceptions import ClientError
 
-from paperless_b2_archiver.b2 import latest_inventory, s3_client
-from paperless_b2_archiver.config import Config
-from paperless_b2_archiver.observability import Metric, journal, write_metrics
-from paperless_b2_archiver.paperless import PaperlessAPI
-from paperless_b2_archiver.retention import resolve_class
-from paperless_b2_archiver.state import State
+from paperless_s3_archiver.config import Config
+from paperless_s3_archiver.observability import Metric, journal, write_metrics
+from paperless_s3_archiver.paperless import PaperlessAPI
+from paperless_s3_archiver.retention import resolve_class
+from paperless_s3_archiver.s3 import latest_inventory, s3_client
+from paperless_s3_archiver.state import State
 
 LOG = logging.getLogger("paperless-archive")
 

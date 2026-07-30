@@ -92,6 +92,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6.0.2
       - name: Build the image
-        run: docker build -t paperless-b2-archiver:ci .
+        run: docker build -t paperless-s3-archiver:ci .
       - name: The image can at least start and describe itself
-        run: docker run --rm paperless-b2-archiver:ci --help
+        run: docker run --rm paperless-s3-archiver:ci --help

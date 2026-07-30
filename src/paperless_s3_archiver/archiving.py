@@ -12,18 +12,18 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from paperless_b2_archiver.b2 import put_locked
-from paperless_b2_archiver.config import Config
-from paperless_b2_archiver.observability import journal
-from paperless_b2_archiver.paperless import PaperlessAPI
-from paperless_b2_archiver.retention import (
+from paperless_s3_archiver.config import Config
+from paperless_s3_archiver.observability import journal
+from paperless_s3_archiver.paperless import PaperlessAPI
+from paperless_s3_archiver.retention import (
     AMBIGUOUS,
     UNCLASSIFIED,
     Undecidable,
     resolve_class,
     retention_for,
 )
-from paperless_b2_archiver.state import State
+from paperless_s3_archiver.s3 import put_locked
+from paperless_s3_archiver.state import State
 
 #: Read in chunks so a large scan does not have to fit in memory twice.
 HASH_CHUNK_BYTES = 1024 * 1024

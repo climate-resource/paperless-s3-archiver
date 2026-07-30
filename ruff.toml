@@ -31,7 +31,7 @@ ignore = [
     # traceback that suggests a bug, and bury the one line an operator needs.
     "TRY400",
 ]
-isort.known-first-party = ["paperless_b2_archiver"]
+isort.known-first-party = ["paperless_s3_archiver"]
 pydocstyle.convention = "numpy"
 
 [lint.per-file-ignores]

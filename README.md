@@ -1,4 +1,4 @@
-# paperless-b2-archiver
+# paperless-s3-archiver
 
 Write [paperless-ngx](https://docs.paperless-ngx.com/) documents to a WORM object
 store under Object Lock, with a statutory retention period computed for each
@@ -15,6 +15,36 @@ Built for a German *revisionssichere Dokumentenablage* (GoBD, § 147 AO), but
 nothing here is Germany-specific: the retention table is configuration, and the
 periods, their legal basis and the clock each one runs on come from the
 deployment rather than from this code.
+
+## What the object store has to support
+
+Any S3-compatible store with Object Lock. It is developed against Backblaze B2
+and tested against an AWS S3 emulation, and it names no provider anywhere in the
+code. Six S3 calls are made — `put_object`, `head_object`, `get_object`,
+`put_object_retention`, `list_objects_v2` and a managed download — so what your
+store needs is:
+
+- **Object Lock, enabled at bucket creation.** It cannot be retrofitted on any
+  implementation, and on AWS S3 it also requires bucket versioning.
+- **Per-object retention**, set on `PUT`. This program never sets a bucket
+  default, so a mistake in one class cannot silently apply to everything.
+- **`COMPLIANCE` mode**, if you want the guarantee that is the point of the
+  exercise. `GOVERNANCE` is for the burn-in.
+- **Legal holds**, if you use the `employment_end` clock. On B2 that needs the
+  `writeFileLegalHolds` capability on the writer key.
+- **Two credentials scoped to the one bucket**, one write-only and one
+  read-only. Neither should be able to delete or to bypass governance.
+
+Uploads are deliberately plain: AWS-chunked framing and trailing CRC32
+checksums are turned off, because they are an AWS wire format rather than an S3
+API and implementations differ on whether they accept the first and store the
+second as object metadata. Integrity is established instead by a SHA-256 this
+program computes, writes into the object's metadata and repeats in the sidecar
+— verifiable by anyone holding the bytes, with no knowledge of this program.
+
+Note this is not audited or certified in any way. It is your responsibility to
+ensure that your use of this software meets your legal requirements, if you
+decide to use it.
 
 ## The shape of it
 
@@ -37,19 +67,19 @@ application has no path to the archive.
 ## Install
 
 ```bash
-uv tool install paperless-b2-archiver
+uv tool install paperless-s3-archiver
 ```
 
 Or run it without installing:
 
 ```bash
-uvx paperless-b2-archiver --config /etc/paperless/crs/archive.json validate
+uvx paperless-s3-archiver --config /etc/paperless/crs/archive.json validate
 ```
 
 A container image is published alongside each release:
 
 ```bash
-docker run --rm ghcr.io/climate-resource/paperless-b2-archiver:latest --help
+docker run --rm ghcr.io/climate-resource/paperless-s3-archiver:latest --help
 ```
 
 ## Configure

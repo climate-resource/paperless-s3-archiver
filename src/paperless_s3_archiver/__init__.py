@@ -14,4 +14,4 @@ falls under requires, and no longer.
 
 import importlib.metadata
 
-__version__ = importlib.metadata.version("paperless-b2-archiver")
+__version__ = importlib.metadata.version("paperless-s3-archiver")

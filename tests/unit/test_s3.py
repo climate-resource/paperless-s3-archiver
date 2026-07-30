@@ -2,18 +2,24 @@
 Object Lock: the difference between the burn-in and the real thing
 """
 
+import contextlib
 import datetime as dt
 
 import pytest
 
-from paperless_b2_archiver.b2 import MissingCredentials, put_locked, s3_client
-from paperless_b2_archiver.config import Config
-from paperless_b2_archiver.retention import year_end
+from paperless_s3_archiver.config import Config
+from paperless_s3_archiver.retention import year_end
+from paperless_s3_archiver.s3 import (
+    MissingCredentials,
+    content_md5,
+    put_locked,
+    s3_client,
+)
 
 
 class TestS3Client:
     def test_reads_the_role_specific_credentials(
-        self, cfg: Config, b2_credentials: None, monkeypatch: pytest.MonkeyPatch
+        self, cfg: Config, store_credentials: None, monkeypatch: pytest.MonkeyPatch
     ):
         # Bucket scoping is the storage-layer half of the entity separation, and
         # it only works if each role really uses its own key.
@@ -23,7 +29,7 @@ class TestS3Client:
             seen.update(kwargs)
             return object()
 
-        monkeypatch.setattr("paperless_b2_archiver.b2.boto3.client", fake_client)
+        monkeypatch.setattr("paperless_s3_archiver.s3.boto3.client", fake_client)
         s3_client(cfg, role="reader")
         assert seen["aws_access_key_id"] == "test-reader-id"
         assert seen["endpoint_url"] == cfg.endpoint
@@ -134,3 +140,74 @@ class TestPutLockedDuringBurnIn:
         )
         head = locked_bucket.head_object(Bucket=burn_in_cfg.bucket, Key="documents/2027/hr")
         assert head.get("ObjectLockLegalHoldStatus", "OFF") == "OFF"
+
+
+class TestPortability:
+    """
+    The wire format, which decides whether a store other than ours accepts a PUT
+
+    These pin behaviour that no functional test would notice, because moto
+    accepts far more than a real S3-compatible store does.
+    """
+
+    def _headers(self, cfg: Config, **overrides: object) -> dict[str, str]:
+        """Capture the headers one locked PUT would actually send."""
+        seen: dict[str, str] = {}
+        client = s3_client(cfg, role="writer")
+        client.meta.events.register(
+            "before-send.s3.PutObject",
+            lambda request, **_kw: (seen.update(dict(request.headers)), None)[1],
+        )
+        with contextlib.suppress(Exception):
+            put_locked(
+                client=client,
+                cfg=cfg,
+                key="documents/2026/abc",
+                body=b"hello",
+                retain_until=year_end(2035),
+                legal_hold=False,
+                content_type="application/pdf",
+                **overrides,  # ty: ignore[invalid-argument-type]
+            )
+        return {k.lower(): (v.decode() if isinstance(v, bytes) else v) for k, v in seen.items()}
+
+    def test_a_locked_put_carries_an_integrity_header(self, cfg: Config, store_credentials: None):
+        # S3 refuses a PUT that carries Object Lock retention without one, which
+        # is the right rule for an object that cannot be corrected once written.
+        headers = self._headers(cfg)
+        assert "content-md5" in headers
+
+    def test_the_integrity_header_is_the_md5_of_the_body(self, cfg: Config, store_credentials: None):
+        headers = self._headers(cfg)
+        assert headers["content-md5"] == content_md5(b"hello")
+
+    def test_uploads_carry_no_aws_chunked_framing(self, cfg: Config, store_credentials: None):
+        # botocore >= 1.36 adds this by default. It is an AWS wire format rather
+        # than an S3 API, and some implementations store the encoding header as
+        # object metadata, where it would follow the object for as long as it is
+        # locked.
+        headers = self._headers(cfg)
+        assert "aws-chunked" not in headers.get("content-encoding", "")
+        assert "x-amz-sdk-checksum-algorithm" not in headers
+
+    def test_requests_go_to_the_configured_endpoint_in_path_style(self, cfg: Config, store_credentials: None):
+        # Path style is what a store without wildcard DNS needs, and it is what
+        # boto3 resolves to for a custom endpoint. Pinned because a change in
+        # that default would break every non-AWS deployment silently.
+        seen: dict[str, str] = {}
+        client = s3_client(cfg, role="writer")
+        client.meta.events.register(
+            "before-send.s3.PutObject",
+            lambda request, **_kw: (seen.update(url=request.url), None)[1],
+        )
+        with contextlib.suppress(Exception):
+            put_locked(
+                client=client,
+                cfg=cfg,
+                key="documents/2026/abc",
+                body=b"hello",
+                retain_until=year_end(2035),
+                legal_hold=False,
+                content_type="application/pdf",
+            )
+        assert seen["url"].startswith(f"{cfg.endpoint}/{cfg.bucket}/")

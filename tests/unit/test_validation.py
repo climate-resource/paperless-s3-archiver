@@ -5,8 +5,8 @@ The checks that need the date, or a second entity, to decide
 import datetime as dt
 from pathlib import Path
 
-from paperless_b2_archiver.config import Config
-from paperless_b2_archiver.validation import (
+from paperless_s3_archiver.config import Config
+from paperless_s3_archiver.validation import (
     check_exposure_window,
     check_object_lock_mode,
     check_retention_table,

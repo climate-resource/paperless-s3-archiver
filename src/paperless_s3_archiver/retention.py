@@ -11,7 +11,7 @@ get wrong, and can be tested exhaustively against the statute it implements.
 import datetime as dt
 from typing import Any
 
-from paperless_b2_archiver.config import Config
+from paperless_s3_archiver.config import Config
 
 #: Returned by :func:`resolve_class` when a document carries no class tag.
 UNCLASSIFIED = "__unclassified__"

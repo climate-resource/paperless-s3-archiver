@@ -5,8 +5,8 @@ validate: check a configuration before it can write anything permanent
 import argparse
 from pathlib import Path
 
-from paperless_b2_archiver.config import Config, load_config
-from paperless_b2_archiver.validation import validate
+from paperless_s3_archiver.config import Config, load_config
+from paperless_s3_archiver.validation import validate
 
 
 def cmd_validate(cfg: Config, args: argparse.Namespace) -> int:
