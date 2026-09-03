@@ -1,6 +1,9 @@
 name: CI
 
 on:
+  # So a run can be retriggered without an empty commit; GitHub refuses to
+  # rerun anything older than 30 days.
+  workflow_dispatch:
   pull_request:
   push:
     branches: [main]
