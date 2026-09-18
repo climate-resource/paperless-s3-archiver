@@ -162,6 +162,14 @@ The retain-until date is always 31 December of `(clock year + years)`, never
 "now plus N" — § 147 (4) AO starts the clock at the end of the calendar year of
 the last entry.
 
+A `grant:<slug>` tag is also a **floor** under every other clock. A subcontractor
+invoice charged to a project is filed as `class:receipts` and tagged
+`grant:futura`, and is held until the later of the two dates. Nobody has to work
+out which period runs longer, and the sidecar's explanation names both bases. The
+slug must be in `grants` whatever the class: an unknown slug is a refusal, so a
+typo costs a re-tag rather than the grant period. `class:eu-grant` remains the
+class for a document whose only basis is the agreement.
+
 An `employment_end` document whose employment has not ended is archived under a
 **legal hold**, with a floor retain-until computed from the document year. That
 is what stops a contract signed in 2027 for an employment ending in 2045 from

@@ -130,6 +130,87 @@ class TestGrantClock:
             retention_for(incomplete, class_name="eu-grant", doc_year=2026, tag_names=["grant:partial"])
 
 
+class TestGrantFloor:
+    """A grant tag holds a document at least as long as its agreement requires.
+
+    The alternative was a rule telling whoever files the document to work out
+    which of two periods runs longer and pick that class. That is arithmetic a
+    person should never be asked to do, it has to be redone whenever a grant's
+    final payment year moves, and getting it wrong under-retains permanently.
+    So the grant tag is a floor under whatever class the document actually is.
+    """
+
+    def test_raises_a_receipt_to_the_grant_period(self, cfg: Config):
+        # A 2020 subcontractor invoice on FUTURA: 2020 + 9 = 2029 as a
+        # Buchungsbeleg, but 2030 + 5 = 2035 under the grant.
+        retain_until, legal_hold, why = retention_for(
+            cfg,
+            class_name="receipts",
+            doc_year=2020,
+            tag_names=["class:receipts", "grant:futura"],
+        )
+        assert retain_until == year_end(2035)  # not 2029, which receipts alone gives
+        assert legal_hold is False
+        assert "futura" in why
+        assert "receipts" in why
+
+    def test_leaves_a_longer_class_period_alone(self, cfg: Config):
+        # The case the old "the grant class wins" rule got wrong: receipts grows
+        # with the document year while a grant's date is fixed, so from some
+        # year onwards the tax clock is the longer one and must not be dropped.
+        retain_until, _, why = retention_for(
+            cfg,
+            class_name="receipts",
+            doc_year=2030,
+            tag_names=["class:receipts", "grant:futura"],
+        )
+        assert retain_until == year_end(2039)
+        assert "longer than" in why
+
+    def test_only_ever_raises(self, cfg: Config):
+        # Retention can be extended and never shortened, so taking the later of
+        # the two bases is the one combination that cannot be wrong.
+        for doc_year in range(2015, 2040):
+            alone, _, _ = retention_for(
+                cfg, class_name="receipts", doc_year=doc_year, tag_names=["class:receipts"]
+            )
+            with_grant, _, _ = retention_for(
+                cfg,
+                class_name="receipts",
+                doc_year=doc_year,
+                tag_names=["class:receipts", "grant:futura"],
+            )
+            assert with_grant >= alone
+
+    def test_the_explanation_names_both_bases(self, cfg: Config):
+        # The sidecar carries this string, so an auditor reads why a document is
+        # held until a date its own class would not have produced.
+        _, _, why = retention_for(
+            cfg,
+            class_name="books",
+            doc_year=2020,
+            tag_names=["class:books", "grant:futura"],
+        )
+        assert "futura" in why
+        assert "books" in why
+
+    def test_a_document_with_no_grant_tag_is_unaffected(self, cfg: Config):
+        plain, _, _ = retention_for(cfg, class_name="receipts", doc_year=2026, tag_names=["class:receipts"])
+        assert plain == year_end(2035)
+
+    def test_an_unregistered_slug_refuses_even_on_a_dated_class(self, cfg: Config):
+        # Previously a grant tag on a receipt was simply ignored, so a typo lost
+        # the grant basis silently. Now it costs a re-tag, which is the same
+        # trade the grant clock has always made.
+        with pytest.raises(Undecidable, match="never assumed"):
+            retention_for(
+                cfg,
+                class_name="receipts",
+                doc_year=2026,
+                tag_names=["class:receipts", "grant:futrua"],
+            )
+
+
 class TestEmploymentEndClock:
     def test_uses_the_end_year_when_the_employment_has_ended(self, cfg: Config):
         retain_until, legal_hold, _ = retention_for(
