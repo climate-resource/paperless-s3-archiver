@@ -169,7 +169,8 @@ def check_retention_table(cfg: Config) -> list[Finding]:
                 Finding(
                     "warning",
                     f"{cfg.entity}: a grant-clock class is archived but no grants are "
-                    "registered, so every grant document will be refused.",
+                    "registered, so every document with a grant tag will be refused, "
+                    "whatever its class.",
                 )
             )
 

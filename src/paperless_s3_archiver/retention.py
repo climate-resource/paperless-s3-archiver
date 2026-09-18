@@ -107,6 +107,75 @@ def tag_suffix(tag_names: list[str], *, prefix: str) -> str | None:
     return None
 
 
+def grant_floor(cfg: Config, tag_names: list[str]) -> tuple[dt.datetime, str] | None:
+    """
+    The retain-until a ``grant:<slug>`` tag imposes, whatever the document's class
+
+    A grant agreement's record-keeping clause applies to a document because of
+    what the document *supports*, not because of what kind of document it is. So
+    the grant tag is a floor under the class's own date rather than an
+    alternative to it, and a subcontractor invoice can be filed as the
+    Buchungsbeleg it plainly is without anyone having to work out which of two
+    periods runs longer.
+
+    Parameters
+    ----------
+    cfg
+        The entity's config, which owns the tag prefix and the grant registry.
+    tag_names
+        Every tag on the document.
+
+    Returns
+    -------
+    :
+        ``(retain_until, explanation)``, or ``None`` when the document carries
+        no grant tag at all.
+
+    Raises
+    ------
+    Undecidable
+        When a grant tag names a slug the registry does not have, or one whose
+        entry cannot produce a date. Never guessed: the period comes from the
+        agreement, and a typo must cost a re-tag rather than a wrong date.
+    """
+    slug = tag_suffix(tag_names, prefix=cfg.grant_tag_prefix)
+    if slug is None:
+        return None
+    grant = cfg.grants.get(slug)
+    if grant is None or not grant.complete:
+        raise Undecidable(
+            f"grant '{slug}' has no final_payment_year and years in the entity config. "
+            "The period comes from the grant agreement and is never assumed."
+        )
+    base = int(grant.final_payment_year or 0)
+    years = int(grant.years or 0)
+    return year_end(base + years), f"grant {slug}, final payment {base} + {years}"
+
+
+def _with_grant_floor(
+    cfg: Config,
+    *,
+    base: dt.datetime,
+    why: str,
+    tag_names: list[str],
+    legal_hold: bool = False,
+) -> tuple[dt.datetime, bool, str]:
+    """
+    Raise a class's own date to the grant's, when a grant holds it longer
+
+    Only ever raises. Retention can be extended and never shortened, so taking
+    the later of two bases is the one combination that cannot be wrong, and it
+    is arithmetic the person filing the document should never have to do.
+    """
+    floor = grant_floor(cfg, tag_names)
+    if floor is None:
+        return base, legal_hold, why
+    until, grant_why = floor
+    if until <= base:
+        return base, legal_hold, f"{why} (longer than {grant_why})"
+    return until, legal_hold, f"{grant_why}, which outlasts {why}"
+
+
 def retention_for(
     cfg: Config,
     *,
@@ -146,29 +215,19 @@ def retention_for(
 
     if clock == "document_year":
         years = int(spec.years or 0)
-        return (
-            year_end(doc_year + years),
-            False,
-            f"{class_name}: document year {doc_year} + {years}",
+        return _with_grant_floor(
+            cfg,
+            base=year_end(doc_year + years),
+            why=f"{class_name}: document year {doc_year} + {years}",
+            tag_names=tag_names,
         )
 
     if clock == "grant":
-        slug = tag_suffix(tag_names, prefix=cfg.grant_tag_prefix)
-        if slug is None:
+        floor = grant_floor(cfg, tag_names)
+        if floor is None:
             raise Undecidable(f"class {class_name} needs a {cfg.grant_tag_prefix}<slug> tag naming the grant")
-        grant = cfg.grants.get(slug)
-        if grant is None or not grant.complete:
-            raise Undecidable(
-                f"grant '{slug}' has no final_payment_year and years in the entity config. "
-                "The period comes from the grant agreement and is never assumed."
-            )
-        base = int(grant.final_payment_year or 0)
-        years = int(grant.years or 0)
-        return (
-            year_end(base + years),
-            False,
-            f"{class_name}: grant {slug}, final payment {base} + {years}",
-        )
+        until, why = floor
+        return until, False, f"{class_name}: {why}"
 
     if clock == "employment_end":
         years = int(spec.years or 0)
@@ -187,16 +246,21 @@ def retention_for(
             # for the full period even if nobody ever comes back to set the
             # employment end. Retention can be extended and never shortened, so
             # a floor costs nothing and removes a silent failure mode.
-            return (
-                year_end(doc_year + years),
-                True,
-                f"{class_name}: employment '{slug}' has not ended. Legal hold, "
-                f"floor retain-until from document year {doc_year} + {years}",
+            return _with_grant_floor(
+                cfg,
+                base=year_end(doc_year + years),
+                why=(
+                    f"{class_name}: employment '{slug}' has not ended. Legal hold, "
+                    f"floor retain-until from document year {doc_year} + {years}"
+                ),
+                tag_names=tag_names,
+                legal_hold=True,
             )
-        return (
-            year_end(int(end_year) + years),
-            False,
-            f"{class_name}: employment '{slug}' ended {end_year} + {years}",
+        return _with_grant_floor(
+            cfg,
+            base=year_end(int(end_year) + years),
+            why=f"{class_name}: employment '{slug}' ended {end_year} + {years}",
+            tag_names=tag_names,
         )
 
     raise Undecidable(f"class {class_name} has an unknown clock '{clock}'")
