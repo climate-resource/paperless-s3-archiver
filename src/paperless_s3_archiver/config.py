@@ -57,8 +57,8 @@ class RetentionClass(BaseModel):
     clock: Clock = "document_year"
 
     restricted: bool = False
-    """Personnel material: granted to the hr group, invisible to general staff
-    and to auditors."""
+    """Personnel material: left out of the auditor export. Who can see it in
+    paperless is the instance's own permission model, not this tool's."""
 
     basis: str = ""
     """The statute or agreement the period comes from. Carried into every
@@ -153,7 +153,6 @@ class Config(BaseModel):
     grants: dict[str, Grant] = Field(default_factory=dict)
     employments: dict[str, Employment] = Field(default_factory=dict)
 
-    hr_group: str = "hr"
     auditors_group: str = "auditors"
     breakglass_user: str = "breakglass"
 

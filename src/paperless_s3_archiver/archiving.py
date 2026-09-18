@@ -84,9 +84,8 @@ class TapContext:
     """
     What one tap run establishes once and every document in it then uses
 
-    Built at the top of a run rather than per document, because the group and
-    user lookups and the tag table are the same for every job in the spool and
-    each one is an API round trip.
+    Built at the top of a run rather than per document, because the tag table
+    is the same for every job in the spool and reading it is an API round trip.
     """
 
     client: Any
@@ -95,25 +94,16 @@ class TapContext:
     api: PaperlessAPI
     """The paperless API, asked what each document currently is."""
 
-    hr_group: int | None
-    """The id of the hr group, or ``None`` when it does not exist."""
-
-    service_user: int | None
-    """The id of the archive-tap service account, used as the owner of
-    restricted documents."""
-
     tag_names_by_id: dict[int, str]
     """Every tag id mapped to its name, read once per run."""
 
     @classmethod
-    def build(cls, cfg: Config, *, client: Any, api: PaperlessAPI) -> "TapContext":
+    def build(cls, *, client: Any, api: PaperlessAPI) -> "TapContext":
         """
         Establish the run's context from the API
 
         Parameters
         ----------
-        cfg
-            The entity's config, which names the hr group.
         client
             A writer-role S3 client.
         api
@@ -127,8 +117,6 @@ class TapContext:
         return cls(
             client=client,
             api=api,
-            hr_group=api.group_id(cfg.hr_group),
-            service_user=api.user_id("archive-tap"),
             tag_names_by_id={t["id"]: t["name"] for t in api.all_pages("/tags/")},
         )
 
@@ -188,22 +176,6 @@ def archive_document(cfg: Config, *, state: State, ctx: TapContext, job: dict[st
         return "rejected"
 
     spec = cfg.retention_classes[class_name]
-
-    # Personnel material is granted to the hr group and given an owner, because
-    # in paperless an ownerless document is visible to everyone who can view
-    # documents -- including an auditor account. The grant comes from the class,
-    # so it does not depend on anyone remembering.
-    if spec.restricted and ctx.hr_group is not None and ctx.service_user is not None:
-        ctx.api.patch(
-            f"/documents/{doc_id}/",
-            {
-                "owner": ctx.service_user,
-                "set_permissions": {
-                    "view": {"users": [], "groups": [ctx.hr_group]},
-                    "change": {"users": [], "groups": [ctx.hr_group]},
-                },
-            },
-        )
 
     if not spec.archive:
         # Indexed, searchable, backed up through the ordinary backup chain, and
