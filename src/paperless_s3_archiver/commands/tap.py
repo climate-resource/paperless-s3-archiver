@@ -43,7 +43,6 @@ def cmd_tap(cfg: Config, args: argparse.Namespace) -> int:
     del args
     state = State(cfg)
     ctx = TapContext.build(
-        cfg,
         client=s3_client(cfg, role="writer"),
         api=PaperlessAPI(api_base=cfg.api_base, entity=cfg.entity),
     )

@@ -38,16 +38,9 @@ def paperless_api(cfg: Config, monkeypatch: pytest.MonkeyPatch):
         13: {"id": 13, "title": "Mystery", "tags": [], "created": "2026-03-04"},
     }
     with responses.RequestsMock(assert_all_requests_are_fired=False) as mocked:
-        mocked.add(responses.GET, f"{cfg.api_base}/groups/", json=_page([{"id": 7, "name": "hr"}]))
-        mocked.add(
-            responses.GET,
-            f"{cfg.api_base}/users/",
-            json=_page([{"id": 3, "username": "archive-tap"}]),
-        )
         mocked.add(responses.GET, f"{cfg.api_base}/tags/", json=_page(TAGS))
         for doc_id, doc in documents.items():
             mocked.add(responses.GET, f"{cfg.api_base}/documents/{doc_id}/", json=doc)
-            mocked.add(responses.PATCH, f"{cfg.api_base}/documents/{doc_id}/", json=doc)
         yield mocked
 
 
@@ -227,20 +220,18 @@ class TestTapDuringBurnIn:
         assert sidecar["object_lock_mode"] == "GOVERNANCE"
 
 
-class TestRestrictedDocuments:
-    def test_personnel_material_is_granted_to_the_hr_group(self, cfg: Config, locked_bucket, paperless_api):
-        # In paperless an ownerless document is visible to everyone who can view
-        # documents, including an auditor account.
-        _spool(cfg, 11, "personnel.pdf")
+class TestPermissions:
+    @pytest.mark.parametrize(
+        ("doc_id", "filename"),
+        [(10, "invoice.pdf"), (11, "personnel.pdf")],
+        ids=["ordinary", "restricted"],
+    )
+    def test_the_tap_never_writes_to_paperless(
+        self, cfg: Config, locked_bucket, paperless_api, doc_id: int, filename: str
+    ):
+        # Who may see a document is decided inside paperless, by its own
+        # permission model. Personnel material is no exception: the tap reads
+        # what a document is and writes nothing back.
+        _spool(cfg, doc_id, filename)
         cmd_tap(cfg, Namespace())
-
-        patches = [c for c in paperless_api.calls if c.request.method == "PATCH"]
-        assert len(patches) == 1
-        payload = json.loads(patches[0].request.body)
-        assert payload["owner"] == 3
-        assert payload["set_permissions"]["view"]["groups"] == [7]
-
-    def test_an_ordinary_document_is_left_alone(self, cfg: Config, locked_bucket, paperless_api):
-        _spool(cfg, 10, "invoice.pdf")
-        cmd_tap(cfg, Namespace())
-        assert [c for c in paperless_api.calls if c.request.method == "PATCH"] == []
+        assert {c.request.method for c in paperless_api.calls} == {"GET"}
